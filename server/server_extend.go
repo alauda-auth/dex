@@ -63,6 +63,10 @@ func (s *Server) ParseAuthorizationRequest(r *http.Request) (*storage.AuthReques
 	return s.parseAuthorizationRequest(r)
 }
 
+func (s *Server) Connectors() map[string]Connector {
+	return s.connectors
+}
+
 // handler
 func (s *Server) HandleToken(w http.ResponseWriter, r *http.Request) {
 	s.handleToken(w, r)

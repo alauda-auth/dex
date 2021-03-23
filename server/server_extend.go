@@ -108,6 +108,17 @@ func (s *Server) HandleDeviceCallback(w http.ResponseWriter, r *http.Request) {
 	s.handleDeviceCallback(w, r)
 }
 
+func (s *Server) HandleConnectorCallback(w http.ResponseWriter, r *http.Request) {
+	s.handleConnectorCallback(w, r)
+}
+
+func (s *Server) HandleApproval(w http.ResponseWriter, r *http.Request) {
+	s.handleApproval(w, r)
+}
+func (s *Server) DiscoveryHandler() (http.HandlerFunc, error) {
+	return s.discoveryHandler()
+}
+
 // worker
 func (s *Server) StartKeyRotation(ctx context.Context, c Config, now func() time.Time) {
 	strategy := defaultRotationStrategy(

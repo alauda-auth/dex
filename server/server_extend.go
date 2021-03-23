@@ -105,10 +105,18 @@ func (s *Server) HandleDeviceCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // worker
-func (s *Server) StartKeyRotation(ctx context.Context, strategy rotationStrategy, now func() time.Time) {
+func (s *Server) StartKeyRotation(ctx context.Context, c Config, now func() time.Time) {
+	strategy := defaultRotationStrategy(
+		value(c.RotateKeysAfter, 6*time.Hour),
+		value(c.IDTokensValidFor, 24*time.Hour),
+	)
 	s.startKeyRotation(ctx, strategy, now)
 }
 
 func (s *Server) StartGarbageCollection(ctx context.Context, frequency time.Duration, now func() time.Time) {
 	s.startGarbageCollection(ctx, frequency, now)
+}
+
+func Value(val, defaultValue time.Duration) time.Duration {
+	return value(val, defaultValue)
 }

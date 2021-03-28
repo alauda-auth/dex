@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/dexidp/dex/connector"
 	"net/http"
 	"net/url"
 	"time"
@@ -15,12 +16,17 @@ type AuthErr struct {
 	*authErr
 }
 
-func NewSever(c Config) (*Server, error) {
+func New(c Config) (*Server, error) {
 	issuerURL, err := url.Parse(c.Issuer)
 	if err != nil {
 		return nil, fmt.Errorf("server: can't parse issuer URL")
 	}
-
+	if c.Storage == nil {
+		return nil, fmt.Errorf("server: storage cannot be nil")
+	}
+	if len(c.SupportedResponseTypes) == 0 {
+		c.SupportedResponseTypes = []string{responseTypeCode}
+	}
 	supported := make(map[string]bool)
 	for _, respType := range c.SupportedResponseTypes {
 		switch respType {
@@ -51,10 +57,32 @@ func NewSever(c Config) (*Server, error) {
 		passwordConnector:      c.PasswordConnector,
 		logger:                 c.Logger,
 	}
+
+	// Retrieves connector objects in backend storage. This list includes the static connectors
+	// defined in the ConfigMap and dynamic connectors retrieved from the storage.
+	storageConnectors, err := c.Storage.ListConnectors()
+	if err != nil {
+		return nil, fmt.Errorf("server: failed to list connector objects from storage: %v", err)
+	}
+
+	if len(storageConnectors) == 0 && len(s.connectors) == 0 {
+		return nil, fmt.Errorf("server: no connectors specified")
+	}
+
+	for _, conn := range storageConnectors {
+		if _, err := s.OpenConnector(conn); err != nil {
+			return nil, fmt.Errorf("server: Failed to open connector %s: %v", conn.ID, err)
+		}
+	}
+
 	return s, nil
 }
 
 // method
+func (s *Server) IssuerURL() url.URL {
+	return s.issuerURL
+}
+
 func (s *Server) IsAlwaysShowLogin() bool {
 	return s.alwaysShowLogin
 }
@@ -134,4 +162,36 @@ func (s *Server) StartGarbageCollection(ctx context.Context, frequency time.Dura
 
 func Value(val, defaultValue time.Duration) time.Duration {
 	return value(val, defaultValue)
+}
+
+func (s *Server) AuthRequestsValidFor() time.Duration {
+	return s.authRequestsValidFor
+}
+
+func (s *Server) Now() func() time.Time {
+	return s.now
+}
+func (s *Server) AbsPath(pathItems ...string) string {
+	return s.absPath(pathItems...)
+}
+
+func (s *Server) AbsURL(pathItems ...string) string {
+	return s.absURL(pathItems...)
+}
+
+func (s *Server) TokenErrHelper(w http.ResponseWriter, typ string, description string, statusCode int) {
+	s.tokenErrHelper(w, typ, description, statusCode)
+}
+
+func (s *Server) GetConnector(id string) (Connector, error) {
+	return s.getConnector(id)
+}
+
+func (s *Server) FinalizeLogin(identity connector.Identity, authReq storage.AuthRequest, conn connector.Connector) (string, error) {
+	return s.finalizeLogin(identity, authReq, conn)
+}
+
+// function
+func ParseScopes(scopes []string) connector.Scopes {
+	return parseScopes(scopes)
 }

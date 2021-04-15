@@ -28,6 +28,8 @@ type Identity struct {
 	PreferredUsername string
 	Email             string
 	EmailVerified     bool
+	Isadmin           int
+	Account           string
 
 	Groups []string
 

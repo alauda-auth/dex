@@ -19,6 +19,9 @@ type Scopes struct {
 
 	// The client has requested group information about the end user.
 	Groups bool
+
+	// The client has requested role information about the end user.
+	Roles bool
 }
 
 // Identity represents the ID Token claims supported by the server.

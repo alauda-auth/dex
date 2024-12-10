@@ -36,6 +36,8 @@ type Identity struct {
 
 	Groups []string
 	Roles  []string
+	Phone  string
+	Extra  map[string]interface{}
 
 	// ConnectorData holds data used by the connector for subsequent requests after initial
 	// authentication, such as access tokens for upstream provides.
@@ -76,7 +78,8 @@ type CallbackConnector interface {
 }
 
 // SAMLConnector represents SAML connectors which implement the HTTP POST binding.
-//  RelayState is handled by the server.
+//
+//	RelayState is handled by the server.
 //
 // See: https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
 // "3.5 HTTP POST Binding"

@@ -37,6 +37,7 @@ type Identity struct {
 	Groups []string
 	Roles  []string
 	Phone  string
+	Mail   string
 	Extra  map[string]interface{}
 
 	// ConnectorData holds data used by the connector for subsequent requests after initial

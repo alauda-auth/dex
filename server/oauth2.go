@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	jose "gopkg.in/square/go-jose.v2"
+	jose "github.com/go-jose/go-jose/v4"
 
 	"github.com/dexidp/dex/connector"
 	"github.com/dexidp/dex/server/internal"
@@ -207,9 +207,9 @@ func signPayload(key *jose.JSONWebKey, alg jose.SignatureAlgorithm, payload []by
 // The hash algorithm for the at_hash is determined by the signing
 // algorithm used for the id_token. From the spec:
 //
-//    ...the hash algorithm used is the hash algorithm used in the alg Header
-//    Parameter of the ID Token's JOSE Header. For instance, if the alg is RS256,
-//    hash the access_token value with SHA-256
+//	...the hash algorithm used is the hash algorithm used in the alg Header
+//	Parameter of the ID Token's JOSE Header. For instance, if the alg is RS256,
+//	hash the access_token value with SHA-256
 //
 // https://openid.net/specs/openid-connect-core-1_0.html#ImplicitIDToken
 var hashForSigAlg = map[jose.SignatureAlgorithm]func() hash.Hash{
@@ -652,7 +652,26 @@ type storageKeySet struct {
 }
 
 func (s *storageKeySet) VerifySignature(_ context.Context, jwt string) (payload []byte, err error) {
-	jws, err := jose.ParseSigned(jwt)
+	// In go-jose v4, ParseSigned requires a list of allowed signature algorithms
+	// These algorithms are compatible with go-jose v3 and commonly used in OIDC:
+	// - RSASSA-PKCS#1v1.5: RS256, RS384, RS512
+	// - RSASSA-PSS: PS256, PS384, PS512
+	// - HMAC: HS256, HS384, HS512
+	// - ECDSA: ES256, ES384, ES512
+	// - Ed25519: EdDSA (available in go-jose v2+)
+	allowedAlgorithms := []jose.SignatureAlgorithm{
+		// RSA algorithms (most commonly used in OIDC)
+		jose.RS256, jose.RS384, jose.RS512,
+		jose.PS256, jose.PS384, jose.PS512,
+		// ECDSA algorithms
+		jose.ES256, jose.ES384, jose.ES512,
+		// HMAC algorithms (for symmetric keys)
+		jose.HS256, jose.HS384, jose.HS512,
+		// EdDSA (Ed25519)
+		jose.EdDSA,
+	}
+
+	jws, err := jose.ParseSigned(jwt, allowedAlgorithms)
 	if err != nil {
 		return nil, err
 	}
